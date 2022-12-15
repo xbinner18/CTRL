@@ -100,16 +100,12 @@ def lock(bot: Bot, update: Update, args: List[str]) -> str:
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
     if can_delete(chat, bot.id):
-        if len(args) >= 1:
+        if args:
             if args[0] in LOCK_TYPES:
                 sql.update_lock(chat.id, args[0], locked=True)
-                message.reply_text("Locked {} messages for all non-admins!".format(args[0]))
+                message.reply_text(f"Locked {args[0]} messages for all non-admins!")
 
-                return "<b>{}:</b>" \
-                       "\n#LOCK" \
-                       "\n<b>Admin:</b> {}" \
-                       "\nLocked <code>{}</code>.".format(html.escape(chat.title),
-                                                          mention_html(user.id, user.first_name), args[0])
+                return f"<b>{html.escape(chat.title)}:</b>\n#LOCK\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nLocked <code>{args[0]}</code>."
 
             elif args[0] in RESTRICTION_TYPES:
                 sql.update_restriction(chat.id, args[0], locked=True)
@@ -117,12 +113,8 @@ def lock(bot: Bot, update: Update, args: List[str]) -> str:
                     members = users_sql.get_chat_members(str(chat.id))
                     restr_members(bot, chat.id, members, messages=True, media=True, other=True)
 
-                message.reply_text("Locked {} for all non-admins!".format(args[0]))
-                return "<b>{}:</b>" \
-                       "\n#LOCK" \
-                       "\n<b>Admin:</b> {}" \
-                       "\nLocked <code>{}</code>.".format(html.escape(chat.title),
-                                                          mention_html(user.id, user.first_name), args[0])
+                message.reply_text(f"Locked {args[0]} for all non-admins!")
+                return f"<b>{html.escape(chat.title)}:</b>\n#LOCK\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nLocked <code>{args[0]}</code>."
 
             else:
                 message.reply_text("What are you trying to lock...? Try /locktypes for the list of lockables")
@@ -141,15 +133,11 @@ def unlock(bot: Bot, update: Update, args: List[str]) -> str:
     user = update.effective_user  # type: Optional[User]
     message = update.effective_message  # type: Optional[Message]
     if is_user_admin(chat, message.from_user.id):
-        if len(args) >= 1:
+        if args:
             if args[0] in LOCK_TYPES:
                 sql.update_lock(chat.id, args[0], locked=False)
-                message.reply_text("Unlocked {} for everyone!".format(args[0]))
-                return "<b>{}:</b>" \
-                       "\n#UNLOCK" \
-                       "\n<b>Admin:</b> {}" \
-                       "\nUnlocked <code>{}</code>.".format(html.escape(chat.title),
-                                                            mention_html(user.id, user.first_name), args[0])
+                message.reply_text(f"Unlocked {args[0]} for everyone!")
+                return f"<b>{html.escape(chat.title)}:</b>\n#UNLOCK\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nUnlocked <code>{args[0]}</code>."
 
             elif args[0] in RESTRICTION_TYPES:
                 sql.update_restriction(chat.id, args[0], locked=False)
@@ -170,13 +158,9 @@ def unlock(bot: Bot, update: Update, args: List[str]) -> str:
                 elif args[0] == "all":
                     unrestr_members(bot, chat.id, members, True, True, True, True)
                 """
-                message.reply_text("Unlocked {} for everyone!".format(args[0]))
+                message.reply_text(f"Unlocked {args[0]} for everyone!")
 
-                return "<b>{}:</b>" \
-                       "\n#UNLOCK" \
-                       "\n<b>Admin:</b> {}" \
-                       "\nUnlocked <code>{}</code>.".format(html.escape(chat.title),
-                                                            mention_html(user.id, user.first_name), args[0])
+                return f"<b>{html.escape(chat.title)}:</b>\n#UNLOCK\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nUnlocked <code>{args[0]}</code>."
             else:
                 message.reply_text("What are you trying to unlock...? Try /locktypes for the list of lockables")
 
@@ -238,28 +222,9 @@ def build_lock_message(chat_id):
     else:
         res = "There are no current locks in this chat."
     if locks:
-        res += "\n - sticker = `{}`" \
-               "\n - audio = `{}`" \
-               "\n - voice = `{}`" \
-               "\n - document = `{}`" \
-               "\n - video = `{}`" \
-               "\n - contact = `{}`" \
-               "\n - photo = `{}`" \
-               "\n - gif = `{}`" \
-               "\n - url = `{}`" \
-               "\n - bots = `{}`" \
-               "\n - forward = `{}`" \
-               "\n - game = `{}`" \
-               "\n - location = `{}`".format(locks.sticker, locks.audio, locks.voice, locks.document,
-                                             locks.video, locks.contact, locks.photo, locks.gif, locks.url,
-                                             locks.bots, locks.forward, locks.game, locks.location)
+        res += f"\n - sticker = `{locks.sticker}`\n - audio = `{locks.audio}`\n - voice = `{locks.voice}`\n - document = `{locks.document}`\n - video = `{locks.video}`\n - contact = `{locks.contact}`\n - photo = `{locks.photo}`\n - gif = `{locks.gif}`\n - url = `{locks.url}`\n - bots = `{locks.bots}`\n - forward = `{locks.forward}`\n - game = `{locks.game}`\n - location = `{locks.location}`"
     if restr:
-        res += "\n - messages = `{}`" \
-               "\n - media = `{}`" \
-               "\n - other = `{}`" \
-               "\n - previews = `{}`" \
-               "\n - all = `{}`".format(restr.messages, restr.media, restr.other, restr.preview,
-                                        all([restr.messages, restr.media, restr.other, restr.preview]))
+        res += f"\n - messages = `{restr.messages}`\n - media = `{restr.media}`\n - other = `{restr.other}`\n - previews = `{restr.preview}`\n - all = `{all([restr.messages, restr.media, restr.other, restr.preview])}`"
     return res
 
 

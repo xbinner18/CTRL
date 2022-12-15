@@ -40,8 +40,7 @@ def no_longer_afk(bot: Bot, update: Update):
     if not user:  # ignore channels
         return
 
-    res = sql.rm_afk(user.id)
-    if res:
+    if res := sql.rm_afk(user.id):
         firstname = update.effective_user.first_name
         try:
             update.effective_message.reply_text(f"{firstname} is no longer AFK!")
@@ -67,7 +66,7 @@ def reply_afk(bot: Bot, update: Update):
                 try:
                     chat = bot.get_chat(user_id)
                 except BadRequest:
-                    print("Error: Could not fetch userid {} for AFK module".format(user_id))
+                    print(f"Error: Could not fetch userid {user_id} for AFK module")
                     return
                 fst_name = chat.first_name
 
@@ -85,10 +84,11 @@ def reply_afk(bot: Bot, update: Update):
 def check_afk(bot, update, user_id, fst_name):
     if sql.is_afk(user_id):
         user = sql.check_afk_status(user_id)
-        if not user.reason:
-            res = "{} is AFK!".format(fst_name)
-        else:
-            res = "{} is AFK!.\nReason: <code>{}</code>".format(html.escape(fst_name), html.escape(user.reason))
+        res = (
+            f"{html.escape(fst_name)} is AFK!.\nReason: <code>{html.escape(user.reason)}</code>"
+            if user.reason
+            else f"{fst_name} is AFK!"
+        )
         update.effective_message.reply_text(res, parse_mode=ParseMode.HTML)
 
 
@@ -96,11 +96,7 @@ def __user_info__(user_id):
     is_afk = sql.is_afk(user_id)
 
     text = "<b>Currently AFK</b>: {}"
-    if is_afk:
-        return text.format("Yes")
-
-    else:
-        return text.format("No")
+    return text.format("Yes") if is_afk else text.format("No")
 
 
 def __gdpr__(user_id):

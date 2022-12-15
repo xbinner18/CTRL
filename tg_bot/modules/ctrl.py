@@ -9,13 +9,13 @@ async def paste_bin(event):
     if not event.reply_to:
         return await event.reply("Reply /paste Message|File")
     r = await event.get_reply_message()
-    
+
     if not r.media and not r.message:
         return await event.reply("Is replied msg is text or file?")
 
     if r.message:
         content = str(r.message)
-    elif r.media:
+    else:
         doc = await Tclient.download_media(r)
         with open(doc, mode="r") as f:
             content = f.read()
@@ -47,7 +47,7 @@ Translated from **{lang}** to **{co}**
 """
         await event.reply(msg, parse_mode="markdown")
     except KeyError: # TODO: ARABIC AND HINDI
-        msg = f"Failed to translate"
+        msg = "Failed to translate"
         await event.reply(msg, parse_mode="markdown")
 
 

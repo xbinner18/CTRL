@@ -50,8 +50,7 @@ def get(bot, update, notename, show_none=True, no_format=False):
     chat_id = update.effective_chat.id
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
-    conn = connected(bot, update, chat, user.id, need_admin=False)
-    if conn:
+    if conn := connected(bot, update, chat, user.id, need_admin=False):
         chat_id = conn
         send_id = user.id
     else:
@@ -111,14 +110,14 @@ def get(bot, update, notename, show_none=True, no_format=False):
                 "chatname",
                 "mention",
             ]
-            valid_format = escape_invalid_curly_brackets(
+            if valid_format := escape_invalid_curly_brackets(
                 note.value, VALID_NOTE_FORMATTERS
-            )
-            if valid_format:
+            ):
                 text = valid_format.format(
                     first=escape(message.from_user.first_name),
                     last=escape(
-                        message.from_user.last_name or message.from_user.first_name
+                        message.from_user.last_name
+                        or message.from_user.first_name
                     ),
                     fullname=" ".join(
                         [
@@ -128,7 +127,7 @@ def get(bot, update, notename, show_none=True, no_format=False):
                         if message.from_user.last_name
                         else [escape(message.from_user.first_name)]
                     ),
-                    username="@" + escape(message.from_user.username)
+                    username=f"@{escape(message.from_user.username)}"
                     if message.from_user.username
                     else mention_html(
                         message.from_user.id, message.from_user.first_name
@@ -278,11 +277,14 @@ def clear(bot: Bot, update: Update, args: List[str]):
     else:
         chat_id = update.effective_chat.id
         chat_name = "local notes" if chat.type == "private" else chat.title
-    if len(args) >= 1:
+    if args:
         notename = args[0].lower()
 
         if sql.rm_note(chat_id, notename):
-            update.effective_message.reply_text("Successfully removed note from *{}*.".format(chat_name), parse_mode=ParseMode.MARKDOWN)
+            update.effective_message.reply_text(
+                f"Successfully removed note from *{chat_name}*.",
+                parse_mode=ParseMode.MARKDOWN,
+            )
         else:
             update.effective_message.reply_text("That's not a note in my database!")
 
@@ -308,7 +310,7 @@ def list_notes(bot: Bot, update: Update):
     note_list = sql.get_all_chat_notes(chat_id)
 
     for note in note_list:
-        note_name = " • `{}`\n".format(note.name.lower())
+        note_name = f" • `{note.name.lower()}`\n"
         if len(msg) + len(note_name) > MAX_MESSAGE_LENGTH:
             update.effective_message.reply_text(msg, parse_mode=ParseMode.MARKDOWN)
             msg = ""
@@ -329,11 +331,7 @@ def remove_all_notes(bot: Bot, update: Update):
 
     owner = chat.get_member(user.id)
     if owner.status == "creator":
-        allnotes = sql.get_all_chat_notes(chat.id)
-        if not allnotes:
-            msg.reply_text("No notes saved here what should i delete?")
-            return
-        else:
+        if allnotes := sql.get_all_chat_notes(chat.id):
             msg.reply_text(
                 "Do you really wanna delete all of the notes??",
                 reply_markup=InlineKeyboardMarkup(
@@ -352,6 +350,9 @@ def remove_all_notes(bot: Bot, update: Update):
                 ),
             )
 
+        else:
+            msg.reply_text("No notes saved here what should i delete?")
+            return
     else:
         msg.reply_text("This command can be only used by chat OWNER!")
 
@@ -399,13 +400,11 @@ def __import_data__(chat_id, data):
 
         if match:
             failures.append(notename)
-            notedata = notedata[match.end():].strip()
-            if notedata:
+            if notedata := notedata[match.end() :].strip():
                 sql.add_note_to_db(chat_id, notename[1:], notedata,
                                    sql.Types.TEXT)
         elif matchsticker:
-            content = notedata[matchsticker.end():].strip()
-            if content:
+            if content := notedata[matchsticker.end() :].strip():
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -416,8 +415,7 @@ def __import_data__(chat_id, data):
             parse = notedata[matchbtn.end():].strip()
             notedata = parse.split("<###button###>")[0]
             buttons = parse.split("<###button###>")[1]
-            buttons = ast.literal_eval(buttons)
-            if buttons:
+            if buttons := ast.literal_eval(buttons):
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -429,8 +427,7 @@ def __import_data__(chat_id, data):
             file = notedata[matchfile.end():].strip()
             file = file.split("<###TYPESPLIT###>")
             notedata = file[1]
-            content = file[0]
-            if content:
+            if content := file[0]:
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -441,8 +438,7 @@ def __import_data__(chat_id, data):
             photo = notedata[matchphoto.end():].strip()
             photo = photo.split("<###TYPESPLIT###>")
             notedata = photo[1]
-            content = photo[0]
-            if content:
+            if content := photo[0]:
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -453,8 +449,7 @@ def __import_data__(chat_id, data):
             audio = notedata[matchaudio.end():].strip()
             audio = audio.split("<###TYPESPLIT###>")
             notedata = audio[1]
-            content = audio[0]
-            if content:
+            if content := audio[0]:
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -465,8 +460,7 @@ def __import_data__(chat_id, data):
             voice = notedata[matchvoice.end():].strip()
             voice = voice.split("<###TYPESPLIT###>")
             notedata = voice[1]
-            content = voice[0]
-            if content:
+            if content := voice[0]:
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -477,8 +471,7 @@ def __import_data__(chat_id, data):
             video = notedata[matchvideo.end():].strip()
             video = video.split("<###TYPESPLIT###>")
             notedata = video[1]
-            content = video[0]
-            if content:
+            if content := video[0]:
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],
@@ -489,8 +482,7 @@ def __import_data__(chat_id, data):
             video_note = notedata[matchvn.end():].strip()
             video_note = video_note.split("<###TYPESPLIT###>")
             notedata = video_note[1]
-            content = video_note[0]
-            if content:
+            if content := video_note[0]:
                 sql.add_note_to_db(
                     chat_id,
                     notename[1:],

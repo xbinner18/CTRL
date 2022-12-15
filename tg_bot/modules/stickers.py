@@ -32,11 +32,11 @@ def stickerid(bot: Bot, update: Update):
 @run_async
 def getsticker(bot: Bot, update: Update):
     msg = update.effective_message
-    chat_id = update.effective_chat.id
     if msg.reply_to_message and msg.reply_to_message.sticker:
         file_id = msg.reply_to_message.sticker.file_id
         newFile = bot.get_file(file_id)
         newFile.download('sticker.png')
+        chat_id = update.effective_chat.id
         bot.send_document(chat_id, document=open('sticker.png', 'rb'))
         os.remove("sticker.png")
     else:

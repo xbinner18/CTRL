@@ -41,48 +41,39 @@ def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = N
         sql.reset_warns(user.id, chat.id)
         if soft_warn:  # kick
             chat.unban_member(user.id)
-            reply = "{} warnings, User {} has been kicked!".format(limit, mention_html(user.id, user.first_name))
+            reply = f"{limit} warnings, User {mention_html(user.id, user.first_name)} has been kicked!"
 
         else:  # ban
             chat.kick_member(user.id)
-            reply = "{} warnings, User {} has been banned!".format(limit, mention_html(user.id, user.first_name))
+            reply = f"{limit} warnings, User {mention_html(user.id, user.first_name)} has been banned!"
 
         for warn_reason in reasons:
-            reply += "\n - {}".format(html.escape(warn_reason))
+            reply += f"\n - {html.escape(warn_reason)}"
 
         message.bot.send_sticker(chat.id, BAN_STICKER)  # banhammer marie sticker
         keyboard = []
-        log_reason = "<b>{}:</b>" \
-                     "\n#WARN_BAN" \
-                     "\n<b>Admin:</b> {}" \
-                     "\n<b>User:</b> {}" \
-                     "\n<b>Reason:</b> {}"\
-                     "\n<b>Counts:</b> <code>{}/{}</code>".format(html.escape(chat.title),
-                                                                  warner_tag,
-                                                                  mention_html(user.id, user.first_name), 
-                                                                  reason, num_warns, limit)
+        log_reason = f"<b>{html.escape(chat.title)}:</b>\n#WARN_BAN\n<b>Admin:</b> {warner_tag}\n<b>User:</b> {mention_html(user.id, user.first_name)}\n<b>Reason:</b> {reason}\n<b>Counts:</b> <code>{num_warns}/{limit}</code>"
 
     else:
-        keyboard = InlineKeyboardMarkup([{InlineKeyboardButton("Remove warn",
-                                                               callback_data="rm_warn({})".format(user.id)),InlineKeyboardButton(text="Rules",
-                                                                       url="t.me/{}?start={}".format("ctrlrobot",
-                                                                                                     chat.id))}])
+        keyboard = InlineKeyboardMarkup(
+            [
+                {
+                    InlineKeyboardButton(
+                        "Remove warn", callback_data=f"rm_warn({user.id})"
+                    ),
+                    InlineKeyboardButton(
+                        text="Rules", url=f"t.me/ctrlrobot?start={chat.id}"
+                    ),
+                }
+            ]
+        )
 
 
-        reply = "User {} has been warned by {}\n{}/{} warnings... watch out!".format(mention_html(user.id, user.first_name), warner_tag, num_warns,
-                                                             limit)
+        reply = f"User {mention_html(user.id, user.first_name)} has been warned by {warner_tag}\n{num_warns}/{limit} warnings... watch out!"
         if reason:
-            reply += "\nReason for last warn:\n{}".format(html.escape(reason))
+            reply += f"\nReason for last warn:\n{html.escape(reason)}"
 
-        log_reason = "<b>{}:</b>" \
-                     "\n#WARN" \
-                     "\n<b>Admin:</b> {}" \
-                     "\n<b>User:</b> {}" \
-                     "\n<b>Reason:</b> {}"\
-                     "\n<b>Counts:</b> <code>{}/{}</code>".format(html.escape(chat.title),
-                                                                  warner_tag,
-                                                                  mention_html(user.id, user.first_name), 
-                                                                  reason, num_warns, limit)
+        log_reason = f"<b>{html.escape(chat.title)}:</b>\n#WARN\n<b>Admin:</b> {warner_tag}\n<b>User:</b> {mention_html(user.id, user.first_name)}\n<b>Reason:</b> {reason}\n<b>Counts:</b> <code>{num_warns}/{limit}</code>"
 
     try:
         message.reply_text(reply, reply_markup=keyboard, parse_mode=ParseMode.HTML)
@@ -102,22 +93,16 @@ def warn(user: User, chat: Chat, reason: str, message: Message, warner: User = N
 def button(bot: Bot, update: Update) -> str:
     query = update.callback_query  # type: Optional[CallbackQuery]
     user = update.effective_user  # type: Optional[User]
-    match = re.match(r"rm_warn\((.+?)\)", query.data)
-    if match:
-        user_id = match.group(1)
+    if match := re.match(r"rm_warn\((.+?)\)", query.data):
+        user_id = match[1]
         chat = update.effective_chat  # type: Optional[Chat]
-        res = sql.remove_warn(user_id, chat.id)
-        if res:
+        if res := sql.remove_warn(user_id, chat.id):
             update.effective_message.edit_text(
-                "Warn removed by {}.".format(mention_html(user.id, user.first_name)),
-                parse_mode=ParseMode.HTML)
+                f"Warn removed by {mention_html(user.id, user.first_name)}.",
+                parse_mode=ParseMode.HTML,
+            )
             user_member = chat.get_member(user_id)
-            return "<b>{}:</b>" \
-                   "\n#UNWARN" \
-                   "\n<b>Admin:</b> {}" \
-                   "\n<b>User:</b> {}".format(html.escape(chat.title),
-                                              mention_html(user.id, user.first_name),
-                                              mention_html(user_member.user.id, user_member.user.first_name))
+            return f"<b>{html.escape(chat.title)}:</b>\n#UNWARN\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\n<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
         else:
             update.effective_message.edit_text(
                 "User has already has no warns.".format(mention_html(user.id, user.first_name)),
@@ -158,18 +143,11 @@ def reset_warns(bot: Bot, update: Update, args: List[str]) -> str:
     chat = update.effective_chat  # type: Optional[Chat]
     user = update.effective_user  # type: Optional[User]
 
-    user_id = extract_user(message, args)
-
-    if user_id:
+    if user_id := extract_user(message, args):
         sql.reset_warns(user_id, chat.id)
         message.reply_text("Warnings have been reset!")
         warned = chat.get_member(user_id).user
-        return "<b>{}:</b>" \
-               "\n#RESETWARNS" \
-               "\n<b>Admin:</b> {}" \
-               "\n<b>User:</b> {}".format(html.escape(chat.title),
-                                          mention_html(user.id, user.first_name),
-                                          mention_html(warned.id, warned.first_name))
+        return f"<b>{html.escape(chat.title)}:</b>\n#RESETWARNS\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\n<b>User:</b> {mention_html(warned.id, warned.first_name)}"
     else:
         message.reply_text("No user has been designated!")
     return ""
@@ -187,16 +165,17 @@ def warns(bot: Bot, update: Update, args: List[str]):
         limit, soft_warn = sql.get_warn_setting(chat.id)
 
         if reasons:
-            text = "This user has {}/{} warnings, for the following reasons:".format(num_warns, limit)
+            text = f"This user has {num_warns}/{limit} warnings, for the following reasons:"
             for reason in reasons:
-                text += "\n - {}".format(reason)
+                text += f"\n - {reason}"
 
             msgs = split_message(text)
             for msg in msgs:
                 update.effective_message.reply_text(msg)
         else:
             update.effective_message.reply_text(
-                "User has {}/{} warnings, but no reasons for any of them.".format(num_warns, limit))
+                f"User has {num_warns}/{limit} warnings, but no reasons for any of them."
+            )
     else:
         update.effective_message.reply_text("This user hasn't got any warnings!")
 
@@ -228,7 +207,7 @@ def add_warn_filter(bot: Bot, update: Update):
 
     sql.add_warn_filter(chat.id, keyword, content)
 
-    update.effective_message.reply_text("Warn handler added for '{}'!".format(keyword))
+    update.effective_message.reply_text(f"Warn handler added for '{keyword}'!")
     raise DispatcherHandlerStop
 
 
@@ -275,7 +254,7 @@ def list_warn_filters(bot: Bot, update: Update):
 
     filter_list = CURRENT_WARNING_FILTER_STRING
     for keyword in all_handlers:
-        entry = " - {}\n".format(html.escape(keyword))
+        entry = f" - {html.escape(keyword)}\n"
         if len(entry) + len(filter_list) > telegram.MAX_MESSAGE_LENGTH:
             update.effective_message.reply_text(filter_list, parse_mode=ParseMode.HTML)
             filter_list = entry
@@ -320,45 +299,34 @@ def set_warn_limit(bot: Bot, update: Update, args: List[str]) -> str:
                 msg.reply_text("The minimum warn limit is 3!")
             else:
                 sql.set_warn_limit(chat.id, int(args[0]))
-                msg.reply_text("Updated the warn limit to {}".format(args[0]))
-                return "<b>{}:</b>" \
-                       "\n#SET_WARN_LIMIT" \
-                       "\n<b>Admin:</b> {}" \
-                       "\nSet the warn limit to <code>{}</code>".format(html.escape(chat.title),
-                                                                        mention_html(user.id, user.first_name), args[0])
+                msg.reply_text(f"Updated the warn limit to {args[0]}")
+                return f"<b>{html.escape(chat.title)}:</b>\n#SET_WARN_LIMIT\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nSet the warn limit to <code>{args[0]}</code>"
         else:
             msg.reply_text("Give me a number as an arg!")
     else:
         limit, soft_warn = sql.get_warn_setting(chat.id)
 
-        msg.reply_text("The current warn limit is {}".format(limit))
+        msg.reply_text(f"The current warn limit is {limit}")
     return ""
 
 
 @run_async
 @user_admin
 def set_warn_strength(bot: Bot, update: Update, args: List[str]):
-    chat = update.effective_chat  # type: Optional[Chat]
-    user = update.effective_user  # type: Optional[User]
     msg = update.effective_message  # type: Optional[Message]
 
+    chat = update.effective_chat
     if args:
+        user = update.effective_user  # type: Optional[User]
         if args[0].lower() in ("on", "yes"):
             sql.set_warn_strength(chat.id, False)
             msg.reply_text("Too many warns will now result in a ban!")
-            return "<b>{}:</b>\n" \
-                   "<b>Admin:</b> {}\n" \
-                   "Has enabled strong warns. Users will be banned.".format(html.escape(chat.title),
-                                                                            mention_html(user.id, user.first_name))
+            return f"<b>{html.escape(chat.title)}:</b>\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nHas enabled strong warns. Users will be banned."
 
         elif args[0].lower() in ("off", "no"):
             sql.set_warn_strength(chat.id, True)
             msg.reply_text("Too many warns will now result in a kick! Users will be able to join again after.")
-            return "<b>{}:</b>\n" \
-                   "<b>Admin:</b> {}\n" \
-                   "Has disabled strong warns. Users will only be kicked.".format(html.escape(chat.title),
-                                                                                  mention_html(user.id,
-                                                                                               user.first_name))
+            return f"<b>{html.escape(chat.title)}:</b>\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\nHas disabled strong warns. Users will only be kicked."
 
         else:
             msg.reply_text("I only understand on/yes/no/off!")
@@ -374,9 +342,7 @@ def set_warn_strength(bot: Bot, update: Update, args: List[str]):
 
 
 def __stats__():
-    return "{} overall warns, across {} chats.\n" \
-           "{} warn filters, across {} chats.".format(sql.num_warns(), sql.num_warn_chats(),
-                                                      sql.num_warn_filters(), sql.num_warn_filter_chats())
+    return f"{sql.num_warns()} overall warns, across {sql.num_warn_chats()} chats.\n{sql.num_warn_filters()} warn filters, across {sql.num_warn_filter_chats()} chats."
 
 
 def __import_data__(chat_id, data):
@@ -392,8 +358,7 @@ def __migrate__(old_chat_id, new_chat_id):
 def __chat_settings__(chat_id, user_id):
     num_warn_filters = sql.num_warn_chat_filters(chat_id)
     limit, soft_warn = sql.get_warn_setting(chat_id)
-    return "This chat has `{}` warn filters. It takes `{}` warns " \
-           "before the user gets *{}*.".format(num_warn_filters, limit, "kicked" if soft_warn else "banned")
+    return f'This chat has `{num_warn_filters}` warn filters. It takes `{limit}` warns before the user gets *{"kicked" if soft_warn else "banned"}*.'
 
 
 __help__ = """
