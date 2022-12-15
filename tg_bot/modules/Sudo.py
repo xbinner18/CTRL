@@ -43,7 +43,7 @@ def addsudo(bot: Bot, update: Update, args: List[str]):
 def rsudo(bot: Bot, update: Update, args: List[str]):
     message = update.effective_message
     user_id = extract_user(message, args)
-    
+
     if not user_id:
         message.reply_text("Refer the user first.")
         return ""
@@ -51,21 +51,21 @@ def rsudo(bot: Bot, update: Update, args: List[str]):
     if int(user_id) == OWNER_ID:
         message.reply_text("The specified user is my owner! I won't remove him from SUDO_USERS list!")
         return ""
-    
+
     if user_id not in SUDO_USERS:
-        message.reply_text("{} is not a sudo user".format(user_id))
+        message.reply_text(f"{user_id} is not a sudo user")
         return ""
 
     users = [line.rstrip('\n') for line in open("sudo_users.txt")]
 
     with open("sudo_users.txt","w") as file:
         for user in users:
-            if not int(user) == user_id:
+            if int(user) != user_id:
                 file.write(str(user) + "\n")
 
     SUDO_USERS.remove(user_id)
     message.reply_text("Yep Succefully removed from SUDO List!")
-    
+
     return ""
 
 

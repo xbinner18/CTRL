@@ -7,7 +7,7 @@ from telethon import events
 async def purge_messages(event):
     if event.from_id is None:
         return
-    
+
     if not event.is_group:
         await event.reply("I don't think this is a group.")
         return
@@ -24,12 +24,11 @@ async def purge_messages(event):
     if not message:
         await event.reply("Reply to a message to select where to start purging from.")
         return
-    messages = []
     message_id = message.id
     delete_to = event.message.id - 1
     await event.client.delete_messages(event.chat_id, event.message.id)
 
-    messages.append(event.reply_to_msg_id)
+    messages = [event.reply_to_msg_id]
     for message_id in range(delete_to, message_id - 1, -1):
         messages.append(message_id)
         if len(messages) == 100:

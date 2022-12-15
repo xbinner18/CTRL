@@ -37,7 +37,7 @@ UNBAN_RIGHTS = ChatBannedRights(
 
 
 
-@Tclient.on(events.NewMessage(pattern=f"^[!/]zombies ?(.*)"))
+@Tclient.on(events.NewMessage(pattern="^[!/]zombies ?(.*)"))
 async def zombies(event):
 
     if not event.is_group:

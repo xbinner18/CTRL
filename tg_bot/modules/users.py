@@ -40,9 +40,7 @@ def get_user_id(username):
                     return userdat.id
 
             except BadRequest as excp:
-                if excp.message == 'Chat not found':
-                    pass
-                else:
+                if excp.message != 'Chat not found':
                     LOGGER.exception("Error extracting user ID")
 
     return None
@@ -60,9 +58,10 @@ def broadcast(bot: Bot, update: Update):
                 sleep(0.1)
             except TelegramError:
                 failed += 1
-                LOGGER.warning("Couldn't send broadcast to %s, group name %s", str(chat.chat_id), str(chat.chat_name))                
-        update.effective_message.reply_text("Broadcast complete. {} groups failed to receive the message, probably "
-                                            "due to being kicked.".format(failed))
+                LOGGER.warning("Couldn't send broadcast to %s, group name %s", str(chat.chat_id), str(chat.chat_name))
+        update.effective_message.reply_text(
+            f"Broadcast complete. {failed} groups failed to receive the message, probably due to being kicked."
+        )
 
 
 @run_async
@@ -81,7 +80,9 @@ def userbroadcast(bot: Bot, update: Update):
             except TelegramError:
                 failed += 1
                 # LOGGER.warning("Couldn't send broadcast to %s, username %s", str(user.user_id), str(user.username))
-        update.effective_message.reply_text("Broadcast complete.\n{} users failed\n{} users received".format(failed, success))
+        update.effective_message.reply_text(
+            f"Broadcast complete.\n{failed} users failed\n{success} users received"
+        )
 
 
 
@@ -111,7 +112,7 @@ def chats(bot: Bot, update: Update):
     all_chats = sql.get_all_chats() or []
     chatfile = 'List of chats.\n'
     for chat in all_chats:
-        chatfile += "{} - ({})\n".format(chat.chat_name, chat.chat_id)
+        chatfile += f"{chat.chat_name} - ({chat.chat_id})\n"
 
     with BytesIO(str.encode(chatfile)) as output:
         output.name = "chatlist.txt"
@@ -130,10 +131,10 @@ def __user_info__(user_id):
     if user_id == dispatcher.bot.id:
         return """I've seen them in... Wow. Are they stalking me? They're in all the same places I am... oh. It's me."""
     num_chats = sql.get_user_num_chats(user_id)
-    return """I've seen them in <code>{}</code> chats in total.""".format(num_chats)
+    return f"""I've seen them in <code>{num_chats}</code> chats in total."""
 
 def __stats__():
-    return "{} users, across {} chats".format(sql.num_users(), sql.num_chats())
+    return f"{sql.num_users()} users, across {sql.num_chats()} chats"
 
 
 def __gdpr__(user_id):

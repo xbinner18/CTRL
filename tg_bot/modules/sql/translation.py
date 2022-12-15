@@ -16,8 +16,7 @@ LOCALES_INSERTION_LOCK = threading.RLock()
 
 def switch_to_locale(chat_id, locale_name):
     with LOCALES_INSERTION_LOCK:
-        prev = SESSION.query(Locales).get((str(chat_id)))
-        if prev:
+        if prev := SESSION.query(Locales).get((str(chat_id))):
             SESSION.delete(prev)
         switch_locale = Locales(str(chat_id), locale_name)
         SESSION.add(switch_locale)

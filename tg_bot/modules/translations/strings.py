@@ -9,19 +9,13 @@ def tld(chat_id, t, show_none=True):
     if LANGUAGE:
         LOCALE = LANGUAGE.locale_name
         if LOCALE in ('ru') and t in RussianStrings:
-           return RussianStrings[t]
+            return RussianStrings[t]
         elif LOCALE in ('uk') and t in UkrainianStrings:
             return UkrainianStrings[t]
         else:
-            if t in EnglishStrings:
-                return EnglishStrings[t]
-            else:
-                return t
+            return EnglishStrings[t] if t in EnglishStrings else t
     elif show_none:
-        if t in EnglishStrings:
-            return EnglishStrings[t]
-        else:
-            return t
+        return EnglishStrings[t] if t in EnglishStrings else t
 
 
 
@@ -31,7 +25,7 @@ def tld_help(chat_id, t):
     if LANGUAGE:
         LOCALE = LANGUAGE.locale_name
 
-        t = t + "_help"
+        t = f"{t}_help"
 
         print("Test2", t)
 

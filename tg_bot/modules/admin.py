@@ -73,17 +73,11 @@ def promote(bot: Bot, update: Update, args: List[str]) -> str:
                           can_pin_messages=bot_member.can_pin_messages,
                           can_promote_members=bot_member.can_promote_members)
 
-    message.reply_text("Successfully promoted {} in <b>{}</b>!".format(mention_html(user_member.user.id, user_member.user.first_name), (chat.title)), parse_mode=ParseMode.HTML)
-    return (
-        "<b>{}:</b>"
-        "\n#PROMOTED"
-        "\n<b>Admin:</b> {}"
-        "\n<b>User:</b> {}".format(
-            html.escape(chat.title),
-            mention_html(user.id, user.first_name),
-            mention_html(user_member.user.id, user_member.user.first_name),
-        )
+    message.reply_text(
+        f"Successfully promoted {mention_html(user_member.user.id, user_member.user.first_name)} in <b>{chat.title}</b>!",
+        parse_mode=ParseMode.HTML,
     )
+    return f"<b>{html.escape(chat.title)}:</b>\n#PROMOTED\n<b>Admin:</b> {mention_html(user.id, user.first_name)}\n<b>User:</b> {mention_html(user_member.user.id, user_member.user.first_name)}"
 
 @run_async
 @bot_admin
@@ -168,7 +162,10 @@ def demote(bot: Bot, update: Update, args: List[str]) -> str:
                               can_restrict_members=False,
                               can_pin_messages=False,
                               can_promote_members=False)
-        message.reply_text("Successfully demoted {} in <b>{}</b>!".format(mention_html(user_member.user.id, user_member.user.first_name), (chat.title)), parse_mode=ParseMode.HTML)
+        message.reply_text(
+            f"Successfully demoted {mention_html(user_member.user.id, user_member.user.first_name)} in <b>{chat.title}</b>!",
+            parse_mode=ParseMode.HTML,
+        )
         return f"<b>{html.escape(chat.title)}:</b>" \
                 "\n#DEMOTED" \
                f"\n<b>Admin:</b> {mention_html(user.id, user.first_name)}" \
@@ -202,11 +199,12 @@ def pin(bot: Bot, update: Update, args: List[str]) -> str:
         message.reply_text("You are missing rights to pin a message!")
         return ""
 
-    is_silent = True
-    if len(args) >= 1:
-        is_silent = args[0].lower() not in ["notify", "loud", "violent"]
-
     if prev_message and is_group:
+        is_silent = (
+            args[0].lower() not in ["notify", "loud", "violent"]
+            if args
+            else True
+        )
         try:
             bot.pinChatMessage(
                 chat.id, prev_message.message_id, disable_notification=is_silent
@@ -214,13 +212,7 @@ def pin(bot: Bot, update: Update, args: List[str]) -> str:
         except BadRequest as excp:
             if excp.message != "Chat_not_modified":
                 raise
-        return (
-            "<b>{}:</b>"
-            "\n#PINNED"
-            "\n<b>Admin:</b> {}".format(
-                html.escape(chat.title), mention_html(user.id, user.first_name)
-            )
-        )
+        return f"<b>{html.escape(chat.title)}:</b>\n#PINNED\n<b>Admin:</b> {mention_html(user.id, user.first_name)}"
 
     return ""
 
@@ -245,13 +237,7 @@ def unpin(bot: Bot, update: Update) -> str:
         if excp.message != "Chat_not_modified":
             raise
 
-    return (
-        "<b>{}:</b>"
-        "\n#UNPINNED"
-        "\n<b>Admin:</b> {}".format(
-            html.escape(chat.title), mention_html(user.id, user.first_name)
-        )
-    )
+    return f"<b>{html.escape(chat.title)}:</b>\n#UNPINNED\n<b>Admin:</b> {mention_html(user.id, user.first_name)}"
 
 @run_async
 @bot_admin
@@ -261,8 +247,7 @@ def invite(bot: Bot, update: Update):
     msg = update.effective_message
     chat = update.effective_chat
 
-    conn = connected(bot, update, chat, user.id, need_admin=True)
-    if conn:
+    if conn := connected(bot, update, chat, user.id, need_admin=True):
         chat = dispatcher.bot.getChat(conn)
     else:
         if msg.chat.type == "private":
@@ -271,12 +256,12 @@ def invite(bot: Bot, update: Update):
         chat = update.effective_chat
 
     if chat.username:
-        msg.reply_text("@{}".format(chat.username))
+        msg.reply_text(f"@{chat.username}")
     elif chat.type in [chat.SUPERGROUP, chat.CHANNEL]:
         bot_member = chat.get_member(bot.id)
         if bot_member.can_invite_users:
             invitelink = bot.exportChatInviteLink(chat.id)
-            link = "Invite-link generated for *{}:*\n`{}`".format(chat.title, invitelink)
+            link = f"Invite-link generated for *{chat.title}:*\n`{invitelink}`"
             msg.reply_text(link, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
         else:
             msg.reply_text("I don't have access to the invite link, try changing my permissions!")
@@ -287,36 +272,35 @@ def invite(bot: Bot, update: Update):
 def adminlist(bot: Bot, update: Update):
     administrators = update.effective_chat.get_administrators()
     msg = update.effective_message
-    text = "Admins in *{}*:".format(update.effective_chat.title or "this chat")
+    text = f'Admins in *{update.effective_chat.title or "this chat"}*:'
     for admin in administrators:
         user = admin.user
         status = admin.status
-        name = "[{}](tg://user?id={})".format(user.first_name + " " + (user.last_name or ""), user.id)
+        name = f'[{f"{user.first_name} " + (user.last_name or "")}](tg://user?id={user.id})'
         if user.username:
-            name = name = escape_markdown("@" + user.username)
+            name = name = escape_markdown(f"@{user.username}")
         if status == "creator":
             text += "\n 🔱 Creator:"
-            text += "\n` • `{} \n\n • *Administrators*:".format(name)
+            text += f"\n` • `{name} \n\n • *Administrators*:"
     for admin in administrators:
         user = admin.user
         status = admin.status
         chat = update.effective_chat
         count = chat.get_members_count()
-        name = "[{}](tg://user?id={})".format(user.first_name + " " + (user.last_name or ""), user.id)
+        name = f'[{f"{user.first_name} " + (user.last_name or "")}](tg://user?id={user.id})'
         if user.username:
-            name = escape_markdown("@" + user.username)
-            
+            name = escape_markdown(f"@{user.username}")
+
         if status == "administrator":
-            text += "\n`👮🏻 `{}".format(name)
-            members = "\n\n*Members:*\n`🧒 ` {} users".format(count)
-            
+            text += f"\n`👮🏻 `{name}"
+            members = f"\n\n*Members:*\n`🧒 ` {count} users"
+
     msg.reply_text(text + members, parse_mode=ParseMode.MARKDOWN)
 
 
 
 def __chat_settings__(chat_id, user_id):
-    return "You are *admin*: `{}`".format(
-        dispatcher.bot.get_chat_member(chat_id, user_id).status in ("administrator", "creator"))
+    return f'You are *admin*: `{dispatcher.bot.get_chat_member(chat_id, user_id).status in ("administrator", "creator")}`'
 
 
 __help__ = """
