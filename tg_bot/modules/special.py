@@ -32,9 +32,11 @@ def quickscope(bot: Bot, update: Update, args: List[int]):
         update.effective_message.reply_text("You don't seem to be referring to a chat/user")
     try:
         bot.kick_chat_member(chat_id, to_kick)
-        update.effective_message.reply_text("Attempted banning " + to_kick + " from" + chat_id)
+        update.effective_message.reply_text(
+            f"Attempted banning {to_kick} from{chat_id}"
+        )
     except BadRequest as excp:
-        update.effective_message.reply_text(excp.message + " " + to_kick)
+        update.effective_message.reply_text(f"{excp.message} {to_kick}")
 
 
 @run_async
@@ -46,26 +48,24 @@ def quickunban(bot: Bot, update: Update, args: List[int]):
         update.effective_message.reply_text("You don't seem to be referring to a chat/user")
     try:
         bot.unban_chat_member(chat_id, to_kick)
-        update.effective_message.reply_text("Attempted unbanning " + to_kick + " from" + chat_id)
+        update.effective_message.reply_text(
+            f"Attempted unbanning {to_kick} from{chat_id}"
+        )
     except BadRequest as excp:
-        update.effective_message.reply_text(excp.message + " " + to_kick)
+        update.effective_message.reply_text(f"{excp.message} {to_kick}")
 
 
 @run_async
 def banall(bot: Bot, update: Update, args: List[int]):
-    if args:
-        chat_id = str(args[0])
-        all_mems = sql.get_chat_members(chat_id)
-    else:
-        chat_id = str(update.effective_chat.id)
-        all_mems = sql.get_chat_members(chat_id)
+    chat_id = str(args[0]) if args else str(update.effective_chat.id)
+    all_mems = sql.get_chat_members(chat_id)
     for mems in all_mems:
         try:
             bot.kick_chat_member(chat_id, mems.user)
-            update.effective_message.reply_text("Tried banning " + str(mems.user))
+            update.effective_message.reply_text(f"Tried banning {str(mems.user)}")
             sleep(0.1)
         except BadRequest as excp:
-            update.effective_message.reply_text(excp.message + " " + str(mems.user))
+            update.effective_message.reply_text(f"{excp.message} {str(mems.user)}")
             continue
 
 
@@ -79,9 +79,9 @@ def snipe(bot: Bot, update: Update, args: List[str]):
     to_send = " ".join(args)
     if len(to_send) >= 2:
         try:
-            bot.sendMessage(int(chat_id), str(to_send))
+            bot.sendMessage(int(chat_id), to_send)
         except TelegramError:
-            LOGGER.warning("Couldn't send to group %s", str(chat_id))
+            LOGGER.warning("Couldn't send to group %s", chat_id)
             update.effective_message.reply_text("Couldn't send the message. Perhaps I'm not part of that group?")
 
 
@@ -97,7 +97,7 @@ def leavechat(bot: Bot, update: Update, args: List[int]):
         titlechat = bot.get_chat(chat_id).title
         bot.sendMessage(chat_id, "`I Go Away!`")
         bot.leaveChat(chat_id)
-        update.effective_message.reply_text("I left group {}".format(titlechat))
+        update.effective_message.reply_text(f"I left group {titlechat}")
 
     except BadRequest as excp:
         if excp.message == "Chat not found":
@@ -113,23 +113,23 @@ def slist(bot: Bot, update: Update):
     for user_id in SUDO_USERS:
         try:
             user = bot.get_chat(user_id)
-            name = "[{}](tg://user?id={})".format(user.first_name + (user.last_name or ""), user.id)
+            name = f'[{user.first_name + (user.last_name or "")}](tg://user?id={user.id})'
             if user.username:
-                name = escape_html("@" + user.username)
-            text1 += "\n - `{}`".format(name)
+                name = escape_html(f"@{user.username}")
+            text1 += f"\n - `{name}`"
         except BadRequest as excp:
             if excp.message == 'Chat not found':
-                text1 += "\n - ({}) - not found".format(user_id)
+                text1 += f"\n - ({user_id}) - not found"
     for user_id in SUPPORT_USERS:
         try:
             user = bot.get_chat(user_id)
-            name = "[{}](tg://user?id={})".format(user.first_name + (user.last_name or ""), user.id)
+            name = f'[{user.first_name + (user.last_name or "")}](tg://user?id={user.id})'
             if user.username:
-                name = escape_html("@" + user.username)
-            text2 += "\n - `{}`".format(name)
+                name = escape_html(f"@{user.username}")
+            text2 += f"\n - `{name}`"
         except BadRequest as excp:
             if excp.message == 'Chat not found':
-                text2 += "\n - ({}) - not found".format(user_id)
+                text2 += f"\n - ({user_id}) - not found"
     message.reply_text(text1 + "\n", parse_mode=ParseMode.MARKDOWN)
     message.reply_text(text2 + "\n", parse_mode=ParseMode.MARKDOWN)
 

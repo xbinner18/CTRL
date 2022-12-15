@@ -22,11 +22,11 @@ def weather(bot, update, args):
         observation = owm.weather_at_place(location)
         getloc = observation.get_location()
         thelocation = getloc.get_name()
-        if thelocation == None:
+        if thelocation is None:
             thelocation = "Unknown"
         theweather = observation.get_weather()
         temperature = theweather.get_temperature(unit='celsius').get('temp')
-        if temperature == None:
+        if temperature is None:
             temperature = "Unknown"
 
         # Weather symbols
@@ -51,10 +51,11 @@ def weather(bot, update, args):
         elif status_now < 804: # Cloudy
              status += "☁️ "
         status += theweather._detailed_status
-                        
 
-        update.message.reply_text("Today in {} is being {}, around {}°C.\n".format(thelocation,
-                status, temperature))
+
+        update.message.reply_text(
+            f"Today in {thelocation} is being {status}, around {temperature}°C.\n"
+        )
 
     except pyowm.exceptions.not_found_error.NotFoundError:
         update.effective_message.reply_text("Sorry, location not found.")

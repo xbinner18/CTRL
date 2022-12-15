@@ -31,7 +31,7 @@ class Welcome(BASE):
         self.should_goodbye = should_goodbye
 
     def __repr__(self):
-        return "<Chat {} should Welcome new users: {}>".format(self.chat_id, self.should_welcome)
+        return f"<Chat {self.chat_id} should Welcome new users: {self.should_welcome}>"
 
 
 class WelcomeButtons(BASE):
@@ -58,7 +58,7 @@ class CleanServiceSetting(BASE):
         self.chat_id = str(chat_id)
 
     def __repr__(self):
-        return "<Chat used clean service ({})>".format(self.chat_id)
+        return f"<Chat used clean service ({self.chat_id})>"
     
 class WelcomeSecurity(BASE):
     __tablename__ = "welcome_security"
@@ -98,7 +98,7 @@ class WelcomeTimeout(BASE):
 		self.timeout_int = timeout_int
 
 	def __repr__(self):
-		return "<User timeout '%s' in %s>" % (self.user_id, self.chat_id)
+	    return f"<User timeout '{self.user_id}' in {self.chat_id}>"
 
 
 Welcome.__table__.create(checkfirst=True)
@@ -119,8 +119,7 @@ LEAVE_BTN_LOCK = threading.RLock()
 
 def welcome_security(chat_id):
     try:
-        security = SESSION.query(WelcomeSecurity).get(str(chat_id))
-        if security:
+        if security := SESSION.query(WelcomeSecurity).get(str(chat_id)):
             return security.security
         return False
     finally:
@@ -129,8 +128,7 @@ def welcome_security(chat_id):
 
 def set_welcome_security(chat_id, security):
     with WS_LOCK:
-        prev = SESSION.query(WelcomeSecurity).get((str(chat_id)))
-        if prev:
+        if prev := SESSION.query(WelcomeSecurity).get((str(chat_id))):
             SESSION.delete(prev)
         welcome_s = WelcomeSecurity(str(chat_id), security)
         SESSION.add(welcome_s)
@@ -172,10 +170,7 @@ def get_clean_pref(chat_id):
     welc = SESSION.query(Welcome).get(str(chat_id))
     SESSION.close()
 
-    if welc:
-        return welc.clean_welcome
-
-    return False
+    return welc.clean_welcome if welc else False
 
 
 def set_welc_preference(chat_id, should_welcome):
@@ -302,8 +297,7 @@ def get_gdbye_buttons(chat_id):
 
 def migrate_chat(old_chat_id, new_chat_id):
     with INSERTION_LOCK:
-        chat = SESSION.query(Welcome).get(str(old_chat_id))
-        if chat:
+        if chat := SESSION.query(Welcome).get(str(old_chat_id)):
             chat.chat_id = str(new_chat_id)
 
         with WELC_BTN_LOCK:
@@ -322,8 +316,9 @@ def migrate_chat(old_chat_id, new_chat_id):
  
 def clean_service(chat_id: Union[str, int]) -> bool:
     try:
-        chat_setting = SESSION.query(CleanServiceSetting).get(str(chat_id))
-        if chat_setting:
+        if chat_setting := SESSION.query(CleanServiceSetting).get(
+            str(chat_id)
+        ):
             return chat_setting.clean_service
         return False
     finally:

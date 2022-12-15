@@ -26,7 +26,7 @@ def zal(bot: Bot, update: Update, args):
         args = update.message.reply_to_message.text
         args = args.split(" ")
     input_text = " ".join(args).lower()
-    if input_text == "":
+    if not input_text:
         update.message.reply_text("Type in some text!")
         return
     zalgofied_text = zalgo.zalgo().zalgofy(input_text)

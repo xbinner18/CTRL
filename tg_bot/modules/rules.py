@@ -21,20 +21,19 @@ def get_rules(bot: Bot, update: Update):
 # Do not async - not from a handler
 def send_rules(update, chat_id, from_pm=False):
     bot = dispatcher.bot
-    user = update.effective_user 
+    user = update.effective_user
  # type: Optional[User]
     try:
         chat = bot.get_chat(chat_id)
     except BadRequest as excp:
-        if excp.message == "Chat not found" and from_pm:
-            bot.send_message(user.id, "The rules shortcut for this chat hasn't been set properly! Ask admins to "
-                                       "fix this.")
-            return
-        else:
+        if excp.message != "Chat not found" or not from_pm:
             raise
 
+        bot.send_message(user.id, "The rules shortcut for this chat hasn't been set properly! Ask admins to "
+                                   "fix this.")
+        return
     rules = sql.get_rules(chat_id)
-    text = "The rules for *{}* are:\n\n{}".format(escape_markdown(chat.title), rules)
+    text = f"The rules for *{escape_markdown(chat.title)}* are:\n\n{rules}"
 
     if from_pm and rules:
         bot.send_message(user.id, text, parse_mode=ParseMode.MARKDOWN)
@@ -42,21 +41,29 @@ def send_rules(update, chat_id, from_pm=False):
         bot.send_message(user.id, "The group admins haven't set any rules for this chat yet. "
                                   "This probably doesn't mean it's lawless though...!")
     elif rules: 
-         if chat.type == "private":
-             update.effective_message.reply_text(rules, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
-         else:   
-             try:
-                 bot.send_message(user.id, rules, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
-                 update.effective_message.reply_text("I've PM'ed you this group rule's!")
-             except Unauthorized:
-                 update.effective_message.reply_text("Contact me in PM to get this group's rules!",
-                                            reply_markup=InlineKeyboardMarkup(
-                                                [[InlineKeyboardButton(text="Rules",
-                                                                       url="t.me/{}?start={}".format(bot.username,
-                                                                                                     chat_id))]]))                                                                                                   
+        if chat.type == "private":
+            update.effective_message.reply_text(rules, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
+        else:   
+            try:
+                bot.send_message(user.id, rules, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True)
+                update.effective_message.reply_text("I've PM'ed you this group rule's!")
+            except Unauthorized:
+                update.effective_message.reply_text(
+                    "Contact me in PM to get this group's rules!",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton(
+                                    text="Rules",
+                                    url=f"t.me/{bot.username}?start={chat_id}",
+                                )
+                            ]
+                        ]
+                    ),
+                )
     else:
-         update.effective_message.reply_text("The group admins haven't set any rules for this chat yet. "
-                                            "This probably doesn't mean it's lawless though...!")
+        update.effective_message.reply_text("The group admins haven't set any rules for this chat yet. "
+                                           "This probably doesn't mean it's lawless though...!")
 
 
 @run_async
@@ -84,7 +91,7 @@ def clear_rules(bot: Bot, update: Update):
 
 
 def __stats__():
-    return "{} chats have rules set.".format(sql.num_chats())
+    return f"{sql.num_chats()} chats have rules set."
 
 
 def __import_data__(chat_id, data):
@@ -98,7 +105,7 @@ def __migrate__(old_chat_id, new_chat_id):
 
 
 def __chat_settings__(chat_id, user_id):
-    return "This chat has had it's rules set: `{}`".format(bool(sql.get_rules(chat_id)))
+    return f"This chat has had it's rules set: `{bool(sql.get_rules(chat_id))}`"
 
 __help__ = """
  - /rules: get the rules for specific chat.
